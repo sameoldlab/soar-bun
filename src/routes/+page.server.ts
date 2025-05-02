@@ -1,8 +1,6 @@
 import { fail, redirect, type Actions } from "@sveltejs/kit";
-import { env } from "$env/dynamic/private";
 import { nanoid } from "nanoid";
-import { S3 } from "$lib/storage";
-import { Upload } from "@aws-sdk/lib-storage";
+
 export const actions: Actions = {
   async upload(e) {
     try {
@@ -16,17 +14,12 @@ export const actions: Actions = {
         });
       }
       const key = nanoid() + "_" + file.name;
-      const upload = new Upload({
-        params: {
-          Bucket: env.BUCKET_NAME,
-          Key: key,
-          Body: file,
-          ContentType: file.type,
-        },
-        client: S3,
-      });
 
-      await upload.done();
+      const s3file = Bun.s3.file(key)
+      await s3file.write(file, {
+        type: file.type
+      })
+
       redirect(303, `/${key}`);
     } catch (e) {
       console.error(e);
